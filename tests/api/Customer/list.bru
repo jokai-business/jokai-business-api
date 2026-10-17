@@ -1,0 +1,18 @@
+meta {
+  name: List customers
+  type: http
+  seq: 1
+}
+get {
+  url: {{baseUrl}}/api/v1/customers?page=1&pageSize=25
+  body: none
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+assert {
+  res.status: eq 200
+  res.body.meta.page: eq 1
+  res.body.meta.pageSize: eq 25
+}

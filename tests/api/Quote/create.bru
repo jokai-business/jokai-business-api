@@ -1,0 +1,23 @@
+meta {
+  name: Create draft quote
+  type: http
+  seq: 2
+}
+post {
+  url: {{baseUrl}}/api/v1/quotes
+  body: json
+  auth: bearer
+}
+headers {
+  Content-Type: application/json
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+body:json {
+  {"opportunityId":"{{opportunityId}}","currency":"USD","expiryDate":"2099-12-01","terms":"Payment due within 30 days.","version":0,"items":[{"productId":"{{productId}}","quantity":"2","unitPrice":"1250.50","discountPercent":"10"}]}
+}
+assert {
+  res.status: eq 201
+  res.body.data.total: eq 2250.90
+}

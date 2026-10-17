@@ -1,0 +1,22 @@
+meta {
+  name: Create service scope
+  type: http
+  seq: 2
+}
+post {
+  url: {{baseUrl}}/api/v1/scopes
+  body: json
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+headers {
+  Content-Type: application/json
+}
+body:json {
+  {"opportunityId":"{{opportunityId}}","title":"Customer portal scope","objectives":"Improve customer onboarding"}
+}
+assert {
+  res.status: eq 201
+}

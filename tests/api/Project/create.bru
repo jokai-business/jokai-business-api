@@ -1,0 +1,22 @@
+meta {
+  name: Create delivery
+  type: http
+  seq: 3
+}
+post {
+  url: {{baseUrl}}/api/v1/projects
+  body: json
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+headers {
+  Content-Type: application/json
+}
+body:json {
+  {"opportunityId":"{{opportunityId}}","name":"Customer portal delivery","notes":"Approved scope"}
+}
+assert {
+  res.status: eq 201
+}

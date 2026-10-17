@@ -1,0 +1,22 @@
+meta {
+  name: Payment finance
+  type: http
+  seq: 4
+}
+post {
+  url: {{baseUrl}}/api/v1/invoices/{{invoiceId}}/payments
+  body: json
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+headers {
+  Content-Type: application/json
+}
+body:json {
+  {"amount":"100.00","paymentDate":"2026-09-29","method":"bank_transfer","reference":"Example receipt","idempotencyKey":"{{paymentKey}}"}
+}
+assert {
+  res.status: eq 201
+}

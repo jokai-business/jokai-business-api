@@ -1,0 +1,13 @@
+meta {
+  name: Pipeline stages
+  type: http
+  seq: 2
+}
+get {
+  url: {{baseUrl}}/api/v1/pipeline-stages
+  body: none
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}

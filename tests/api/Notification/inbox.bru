@@ -1,0 +1,16 @@
+meta {
+ name: My notification inbox
+ type: http
+ seq: 1
+}
+get {
+ url: {{baseUrl}}/api/v1/notifications?filter=unread
+ body: none
+ auth: bearer
+}
+auth:bearer {
+ token: {{accessToken}}
+}
+assert {
+ res.status: eq 200
+}

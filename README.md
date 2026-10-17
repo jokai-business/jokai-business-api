@@ -1,93 +1,193 @@
-# jokai-business-api
+# JOKAI Business API
 
+Go backend for JOKAI Business OS. It provides organization-scoped CRM, sales quotes and approvals, delivery projects and tasks, invoices and payments, documents, notifications, Gmail connections, AI assistance, imports, and administrator settings.
 
+This repository builds independently. The Go module is still named `ai-business-api`; keep that name in imports. Renaming the repository directory does not change the configured OIDC audience (`ai-business-api`) or existing database identifiers.
 
-## Getting started
+## Requirements
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+- Go 1.26 or newer compatible with `go.mod`.
+- PostgreSQL 17 for the supported local deployment.
+- An OIDC provider configured with the API audience and a reachable JWKS endpoint. The companion deployment uses Keycloak.
+- A writable, absolute directory for document originals.
+- Docker Compose and Python 3 if using the companion local deployment.
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+## Start the complete local application
 
-## Add your files
+Clone the three repositories into sibling directories:
 
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
-
+```text
+workspace/
+  jokai-business-api/
+  jokai-business-web/
+  jokai-business-deployment/
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/jokai/jokai-business-api.git
-git branch -M main
-git push -uf origin main
+
+For a fresh development environment, run:
+
+```bash
+cd ../jokai-business-deployment
+python3 scripts/setup-local.py
+docker compose up -d --build
+python3 scripts/seed-local.py
+docker compose ps
 ```
 
-## Integrate with your tools
+The deployment starts PostgreSQL, migrations, Keycloak, the API, web application, and HTTPS gateway. Open `https://localhost:8443`. Trust the generated `.local/tls/local.crt` certificate locally. Development account details are stored in `.local/accounts.json`; do not commit them. Keycloak can take about a minute to initialize.
 
-* [Set up project integrations](https://gitlab.com/jokai/jokai-business-api/-/settings/integrations)
+From the deployment directory:
 
-## Collaborate with your team
+```bash
+curl --cacert .local/tls/local.crt https://localhost:8443/health
+curl --cacert .local/tls/local.crt https://localhost:8443/ready
+docker compose logs --tail=100 api
+```
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+Stop with `docker compose down`. Adding `-v` deletes persistent database and document volumes. This Compose environment is intended for local development, not public production hosting.
 
-## Test and Deploy
+## Run the API directly with Go
 
-Use the built-in continuous integration in GitLab.
+Run these commands from this repository. First provision an empty development database and configure your OIDC realm. The companion Compose database is not published to a host port by default; use a separately reachable development database for host-based Go execution.
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+```bash
+go mod download
+mkdir -p .local/documents
 
-***
+export HTTP_ADDR='127.0.0.1:8080'
+export DATABASE_URL='postgres://app:replace-me@127.0.0.1:5432/jokai?sslmode=disable'
+export APP_URL='http://localhost:3000'
+export OIDC_ISSUER='https://identity.example.com/realms/jokai'
+export OIDC_JWKS_URL='https://identity.example.com/realms/jokai/protocol/openid-connect/certs'
+export DOCUMENT_STORAGE_BACKEND='local'
+export DOCUMENT_STORAGE_PATH="$PWD/.local/documents"
 
-# Editing this README
+go run ./cmd/migrate
+go run ./cmd/api
+```
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+Replace database and identity-provider placeholders with your development configuration. The `sslmode=disable` example is for a local database only. The API reads process environment variables; it does **not** automatically load `.env` files. The frontend must be configured separately to reach this API and use the same identity provider.
 
-## Suggestions for a good README
+In another terminal:
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+```bash
+curl http://127.0.0.1:8080/health
+curl http://127.0.0.1:8080/ready
+```
 
-## Name
-Choose a self-explaining name for your project.
+`/health` checks HTTP liveness. `/ready` checks database connectivity and returns 503 when unavailable; it does not certify migrations, workers, or external integrations.
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+### Core configuration
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | Required PostgreSQL connection string. |
+| `HTTP_ADDR` | Listen address; defaults to `:8080`. |
+| `APP_URL` | Required application origin. Requests with a different `Origin` header are rejected. |
+| `OIDC_ISSUER` | Required expected token issuer. |
+| `OIDC_JWKS_URL` | Required signing-key URL reachable by the API. |
+| `DOCUMENT_STORAGE_BACKEND` | `local` (default) or `s3`. |
+| `DOCUMENT_STORAGE_PATH` | Required absolute private directory, writable by the API user. Retain it when enabling S3 so older local files remain readable. |
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+## Provision the first administrator
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+A successful OIDC login does not automatically create an organization or grant access. For a new environment, create the user in your identity provider, then provision their existing subject with the bootstrap command:
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+```bash
+export BOOTSTRAP_SUBJECT='existing-oidc-user-subject'
+export BOOTSTRAP_EMAIL='admin@example.com'
+export BOOTSTRAP_NAME='Organization administrator'
+export BOOTSTRAP_ORGANIZATION='My organization'
+go run ./cmd/bootstrap
+unset BOOTSTRAP_SUBJECT BOOTSTRAP_EMAIL BOOTSTRAP_NAME BOOTSTRAP_ORGANIZATION
+```
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+Use the migrated database through `DATABASE_URL`. Bootstrap creates an organization, administrator membership, and audit entry atomically. It is a one-time provisioning command, not an idempotent startup task; duplicate subjects are refused. The complete local setup's seed script provisions its own test accounts, so do not bootstrap those accounts again.
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+## Call the API
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+Business endpoints use `/api/v1`. Send a short-lived OIDC **access token** with the configured issuer and audience `ai-business-api`. Organization and permissions are resolved from the authenticated membership, not a caller-selected organization header.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+```bash
+# ACCESS_TOKEN must already contain a valid access token from your login flow.
+curl --fail-with-body http://127.0.0.1:8080/api/v1/me \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}"
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+curl --fail-with-body http://127.0.0.1:8080/api/v1/customers \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}"
+```
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+Use `https://localhost:8443` and `--cacert ../jokai-business-deployment/.local/tls/local.crt` instead when calling the full local stack. Never save access tokens in source control or API collections.
 
-## License
-For open source projects, say how it is licensed.
+The canonical [OpenAPI contract](api/openapi.yaml) documents request bodies, responses, and endpoints. It uses JSON syntax, which is also valid YAML. The [Bruno collection](tests/api/README.md) contains interactive examples; open `tests/api` in Bruno and configure `baseUrl` and a secret `accessToken` variable.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+Errors return an `error` object containing `code`, `message`, and `requestId`. Use that request ID to correlate with structured server logs. Missing/invalid tokens return 401; insufficient membership permissions or a disallowed origin return 403. For versioned resources, read the current version before writing and refresh after a conflict.
+
+## Optional integrations
+
+Leave optional provider variables unset to run without those providers. Partial or invalid provider configuration can prevent startup.
+
+| Feature | Configuration |
+| --- | --- |
+| AI summaries, questions and extraction | Set `LLM_API_URL`, `LLM_API_KEY`, `LLM_MODEL`, and `LLM_PROVIDER_LABEL` together. The URL must be an HTTPS Chat Completions endpoint ending in `/chat/completions`. No model is bundled with the API. |
+| Personal Gmail | Set `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, and `GMAIL_TOKEN_KEY` (base64-encoded 32-byte encryption key). Requires HTTPS `APP_URL`; register `${APP_URL}/api/v1/gmail/callback`. The connector requests read-only Gmail access. Keep the encryption key stable for stored connections. |
+| Document OCR | `OCR_URL` for the English service; `KHMER_OCR_URL` for the Khmer service. These are separate services, not part of the API image. |
+| Notification email | SMTP settings are validated by [the mail adapter](platform/notifymail/smtp.go). Enable only when you intend to send notification emails. |
+| S3 document originals | Set backend `s3`, `DOCUMENT_S3_BUCKET`, and `DOCUMENT_S3_REGION`; optionally configure `DOCUMENT_S3_ENDPOINT`, `DOCUMENT_S3_PATH_STYLE`, and dedicated access/secret/session credentials. See [storage configuration](platform/documentstorage/config.go) for exact variables and validation. |
+
+S3 uses HTTPS by default; `DOCUMENT_S3_ALLOW_HTTP=true` is an explicit local-development opt-in. The bucket must already exist and be accessible at startup. The adapter does not create buckets or migrate existing originals. Back up document objects and the database together.
+
+Background notification, email, Gmail, AI, and OCR workers run inside the API process. A listening HTTP server alone does not prove external integrations work. Verify each configured provider separately with test data.
+
+## Migrations, builds, and tests
+
+Migrations are embedded from `migrations/` and run explicitly with `go run ./cmd/migrate`. They use a transaction, advisory lock, and stored checksums. Add a new numbered SQL migration rather than modifying an applied file.
+
+```bash
+# Formatting check, static analysis, and unit/protocol tests
+test -z "$(gofmt -l .)"
+go vet ./...
+go test ./...
+
+# Build the runtime commands
+mkdir -p bin
+go build -o bin/api ./cmd/api
+go build -o bin/migrate ./cmd/migrate
+go build -o bin/bootstrap ./cmd/bootstrap
+
+# Build the container image
+docker build -t jokai-business-api:local .
+```
+
+The image contains `/app/api`, `/app/migrate`, and `/app/bootstrap`; its default entrypoint is `/app/api`. Supply environment configuration, network connectivity, and a persistent writable document mount when running it. The companion Compose file manages these for local development and retains its existing `ai-business-api:local` image tag.
+
+Some database integration tests skip when their test database variables are absent. To require all database suites, use a **dedicated disposable PostgreSQL server**, with credentials permitted to create and drop databases:
+
+```bash
+export INTEGRATION_DISPOSABLE_SERVER='yes'
+export INTEGRATION_ADMIN_URL='postgres://postgres:replace-me@127.0.0.1:5432/postgres?sslmode=disable'
+go run ./cmd/integrationcheck
+unset INTEGRATION_DISPOSABLE_SERVER INTEGRATION_ADMIN_URL
+```
+
+The integration runner creates temporary databases, runs the backend tests, rejects skipped required integration suites, and cleans up its databases. Never point it at a shared or production server. GitLab CI defines an ephemeral PostgreSQL service for this gate in [.gitlab-ci.yml](.gitlab-ci.yml).
+
+## Repository layout
+
+- `cmd/`: API, migrations, administrator bootstrap, and verification commands.
+- `internal/`: business domains and their tests.
+- `platform/`: configuration, authentication, HTTP handlers, and external adapters.
+- `migrations/`: embedded database migrations.
+- `api/`: canonical OpenAPI contract.
+- `tests/api/`: Bruno requests.
+- `tests/s3/`: disposable S3 checker image definition.
+
+## Troubleshooting
+
+- **Startup configuration error:** check required environment variables and ensure optional providers are either fully configured or unset.
+- **Database unavailable or missing tables:** verify connectivity, then run migrations against the same database as the API.
+- **401 after login:** check issuer, API audience, access-token expiry, and API access to the JWKS URL.
+- **403 after login:** check the application's user membership/role and the request's `Origin` against `APP_URL`.
+- **Document storage unavailable:** check the absolute local path and permissions, or S3 bucket access and trusted TLS configuration.
+- **AI/OCR/email unavailable:** check the provider settings and service health; these features require their optional services.
+
+Keep `.env`, `.local/`, private keys, logs, and backups out of Git. The supplied `.gitignore` excludes these local files. Production rollout still requires environment-specific identity/TLS configuration, provider verification, and recovery validation.

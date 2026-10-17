@@ -1,0 +1,16 @@
+meta {
+ name: Email delivery history
+ type: http
+ seq: 3
+}
+get {
+ url: {{baseUrl}}/api/v1/settings/email/deliveries?status=all&page=1&pageSize=25
+ body: none
+ auth: bearer
+}
+auth:bearer {
+ token: {{accessToken}}
+}
+assert {
+ res.status: eq 200
+}

@@ -1,0 +1,19 @@
+meta {
+ name: Review document intake
+ type: http
+ seq: 2
+}
+post {
+ url: {{baseUrl}}/api/v1/documents/{{documentId}}/review
+ body: json
+ auth: bearer
+}
+auth:bearer {
+ token: {{accessToken}}
+}
+body:json {
+ {"version":1,"status":"accepted","note":"Source reviewed for manual follow-up."}
+}
+assert {
+ res.status: eq 200
+}

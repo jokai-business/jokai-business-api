@@ -1,0 +1,16 @@
+meta {
+  name: List service scope
+  type: http
+  seq: 1
+}
+get {
+  url: {{baseUrl}}/api/v1/scopes
+  body: none
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+assert {
+  res.status: eq 200
+}

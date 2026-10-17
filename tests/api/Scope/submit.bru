@@ -1,0 +1,22 @@
+meta {
+  name: Submit service scope
+  type: http
+  seq: 4
+}
+post {
+  url: {{baseUrl}}/api/v1/scopes/{{scopeId}}/submit
+  body: json
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+headers {
+  Content-Type: application/json
+}
+body:json {
+  {"version":2}
+}
+assert {
+  res.status: eq 200
+}

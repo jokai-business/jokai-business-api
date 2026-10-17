@@ -1,0 +1,19 @@
+meta {
+  name: Submit quote for approval
+  type: http
+  seq: 3
+}
+post {
+  url: {{baseUrl}}/api/v1/quotes/{{quoteId}}/submit
+  body: json
+  auth: bearer
+}
+headers {
+  Content-Type: application/json
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+body:json {
+  {"version":1,"note":""}
+}

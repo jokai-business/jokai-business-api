@@ -1,0 +1,16 @@
+meta {
+  name: Snapshot service scope
+  type: http
+  seq: 6
+}
+get {
+  url: {{baseUrl}}/api/v1/scopes/{{scopeId}}/revisions/1
+  body: none
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+assert {
+  res.status: eq 200
+}

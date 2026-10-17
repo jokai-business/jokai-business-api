@@ -1,0 +1,16 @@
+meta {
+ name: List documents
+ type: http
+ seq: 1
+}
+get {
+ url: {{baseUrl}}/api/v1/documents?page=1&pageSize=25
+ body: none
+ auth: bearer
+}
+auth:bearer {
+ token: {{accessToken}}
+}
+assert {
+ res.status: eq 200
+}

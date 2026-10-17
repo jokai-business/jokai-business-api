@@ -1,0 +1,22 @@
+meta {
+  name: Issue finance
+  type: http
+  seq: 3
+}
+post {
+  url: {{baseUrl}}/api/v1/invoices/{{invoiceId}}/issue
+  body: json
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+headers {
+  Content-Type: application/json
+}
+body:json {
+  {"version":1}
+}
+assert {
+  res.status: eq 200
+}

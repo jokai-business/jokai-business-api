@@ -1,0 +1,19 @@
+meta {
+  name: Create opportunity
+  type: http
+  seq: 3
+}
+post {
+  url: {{baseUrl}}/api/v1/opportunities
+  body: json
+  auth: bearer
+}
+headers {
+  Content-Type: application/json
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+body:json {
+  {"customerId":"{{customerId}}","stageId":"{{stageId}}","title":"Customer portal","expectedValue":"12500.50","currency":"USD","probability":40,"source":"Manual","nextAction":"Schedule discovery"}
+}

@@ -1,0 +1,13 @@
+meta {
+  name: List quotes
+  type: http
+  seq: 1
+}
+get {
+  url: {{baseUrl}}/api/v1/quotes?page=1&pageSize=25
+  body: none
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}

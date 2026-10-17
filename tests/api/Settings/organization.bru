@@ -1,0 +1,16 @@
+meta {
+ name: Read organization settings
+ type: http
+ seq: 1
+}
+get {
+ url: {{baseUrl}}/api/v1/settings/organization
+ body: none
+ auth: bearer
+}
+auth:bearer {
+ token: {{accessToken}}
+}
+assert {
+ res.status: eq 200
+}

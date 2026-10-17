@@ -1,0 +1,22 @@
+meta {
+  name: Contribute service scope
+  type: http
+  seq: 3
+}
+post {
+  url: {{baseUrl}}/api/v1/scopes/{{scopeId}}/contributions
+  body: json
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+headers {
+  Content-Type: application/json
+}
+body:json {
+  {"team":"Engineering","service":"Portal implementation","deliverables":"Login and onboarding pages","assumptions":"Customer supplies content","exclusions":"Native mobile application","timeline":"Four weeks","version":1}
+}
+assert {
+  res.status: eq 201
+}

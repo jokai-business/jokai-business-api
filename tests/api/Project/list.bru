@@ -1,0 +1,16 @@
+meta {
+  name: List delivery
+  type: http
+  seq: 2
+}
+get {
+  url: {{baseUrl}}/api/v1/projects
+  body: none
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+assert {
+  res.status: eq 200
+}

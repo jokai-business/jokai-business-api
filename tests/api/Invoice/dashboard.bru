@@ -1,0 +1,16 @@
+meta {
+  name: Dashboard finance
+  type: http
+  seq: 5
+}
+get {
+  url: {{baseUrl}}/api/v1/finance/dashboard
+  body: none
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+assert {
+  res.status: eq 200
+}

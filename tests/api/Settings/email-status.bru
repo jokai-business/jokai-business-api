@@ -1,0 +1,16 @@
+meta {
+ name: Email configuration status
+ type: http
+ seq: 2
+}
+get {
+ url: {{baseUrl}}/api/v1/settings/email
+ body: none
+ auth: bearer
+}
+auth:bearer {
+ token: {{accessToken}}
+}
+assert {
+ res.status: eq 200
+}

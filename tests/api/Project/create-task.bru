@@ -1,0 +1,22 @@
+meta {
+  name: Create Task delivery
+  type: http
+  seq: 5
+}
+post {
+  url: {{baseUrl}}/api/v1/projects/{{projectId}}/tasks
+  body: json
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+headers {
+  Content-Type: application/json
+}
+body:json {
+  {"title":"Confirm delivery scope","priority":"high","status":"todo"}
+}
+assert {
+  res.status: eq 201
+}

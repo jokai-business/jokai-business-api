@@ -1,0 +1,13 @@
+meta {
+  name: Download quote PDF
+  type: http
+  seq: 4
+}
+get {
+  url: {{baseUrl}}/api/v1/quotes/{{quoteId}}/pdf
+  body: none
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}

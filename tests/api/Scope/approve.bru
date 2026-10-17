@@ -1,0 +1,22 @@
+meta {
+  name: Approve service scope
+  type: http
+  seq: 5
+}
+post {
+  url: {{baseUrl}}/api/v1/scopes/{{scopeId}}/approve
+  body: json
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+headers {
+  Content-Type: application/json
+}
+body:json {
+  {"version":3,"note":"Scope reviewed"}
+}
+assert {
+  res.status: eq 200
+}

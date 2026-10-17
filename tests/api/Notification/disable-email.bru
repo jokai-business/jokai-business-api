@@ -1,0 +1,19 @@
+meta {
+ name: Disable my email notifications
+ type: http
+ seq: 4
+}
+put {
+ url: {{baseUrl}}/api/v1/notifications/preferences
+ body: json
+ auth: bearer
+}
+auth:bearer {
+ token: {{accessToken}}
+}
+body:json {
+ {"emailEnabled": false}
+}
+assert {
+ res.status: eq 200
+}

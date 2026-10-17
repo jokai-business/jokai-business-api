@@ -1,0 +1,37 @@
+image: golang:1.26-alpine
+stages: [validate, test, security, build]
+format:
+  stage: validate
+  script:
+    - test -z "$(gofmt -l .)"
+    - go vet ./...
+test:
+  stage: test
+  script:
+    - go test ./...
+security:
+  stage: security
+  image:
+    name: aquasec/trivy:0.69.3
+    entrypoint: ['']
+  script:
+    - trivy fs --exit-code 1 --severity HIGH,CRITICAL --scanners vuln,secret .
+build:
+  stage: build
+  script:
+    - go build ./cmd/api ./cmd/migrate ./cmd/bootstrap
+
+# Dedicated ephemeral PostgreSQL service: never provide a shared/staging database here.
+integration:
+  stage: test
+  services:
+    - name: postgres:17-alpine
+      alias: integration-postgres
+  variables:
+    POSTGRES_DB: postgres
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: disposable-ci-only
+    INTEGRATION_DISPOSABLE_SERVER: 'yes'
+    INTEGRATION_ADMIN_URL: postgres://postgres:disposable-ci-only@integration-postgres:5432/postgres?sslmode=disable
+  script:
+    - go run ./cmd/integrationcheck

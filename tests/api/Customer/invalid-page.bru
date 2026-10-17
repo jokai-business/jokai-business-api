@@ -1,0 +1,17 @@
+meta {
+  name: Reject oversized page
+  type: http
+  seq: 3
+}
+get {
+  url: {{baseUrl}}/api/v1/customers?pageSize=101
+  body: none
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+assert {
+  res.status: eq 400
+  res.body.error.code: eq VALIDATION_ERROR
+}
